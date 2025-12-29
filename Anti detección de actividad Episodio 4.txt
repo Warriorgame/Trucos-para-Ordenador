@@ -1,0 +1,100 @@
+#SingleInstance Force
+#Persistent
+#NoEnv
+SetBatchLines, -1
+modo := -1
+modos := ["Descanso", "Cierre y cambio", "Cierre", "Escritorio"]
+; --- Tecla º ---
+Hotkey, SC029, ToggleModo, On
+; --- Crear GUI para mostrar el modo ---
+Gui, +AlwaysOnTop -Caption +ToolWindow +LastFound
+Gui, Color, FFFFFF
+Gui, Font, c000000 s6, Arial,Bold
+Gui, Add, Text, vModoTxt Left w150 h20, Modo: Descanso
+WinSet, Transparent, 255, A
+ToggleModo:
+{
+modo++
+if (modo > 3)
+modo := 0
+GuiControl,, ModoTxt, % "Modo: " modos[modo + 1]
+MouseGetPos, mx, my
+xPos := mx - 45 ; centrar la ventana respecto al cursor (90/2)
+yPos := my + 15 ; debajo del cursor
+Gui, Show, NoActivate x%xPos% y%yPos% w90 h20, Modo
+SetTimer, OcultarModo, -1200
+return
+}
+OcultarModo:
+{
+Gui, Hide
+return
+}
+CapsLock::
+{
+if (modo = 0)
+return
+if (modo = 1) {
+Send, ^#d
+Sleep, 200
+Send, ^#{F4}
+Sleep, 200
+WinGet, proceso, ProcessName, A
+Process, Close, chrome.exe
+return
+}
+if (modo = 2) {
+WinGet, proceso, ProcessName, A
+Process, Close, chrome.exe
+return
+}
+if (modo = 3) {
+Send, ^#d
+Sleep, 200
+Send, ^#{F4}
+Sleep, 200
+return
+}
+}
+c & s::
+ExitApp
+return
+c::c
+; --- Filtro de oscuridad con Alt+P ---
+!p::
+if !FiltroVisible
+{
+    FiltroVisible := true
+    Gui, Filtro:New, +AlwaysOnTop -Caption +ToolWindow +E0x20  ; E0x20 = clics pasan al escritorio
+    Gui, Filtro:Color, 000000
+    Gui, Filtro:Show, x0 y0 w%A_ScreenWidth% h%A_ScreenHeight%, Filtro
+    WinSet, Transparent, 200, Filtro ; 0-255 opacidad
+}
+else
+{
+    Gui, Filtro:Destroy
+    FiltroVisible := false
+}
+return
+; --- Bloquear/Desbloquear barra de tareas con Alt+O ---
+!o::
+if (modo = 0)  ; modo Descanso
+    return
+
+; Alternar bloqueo de barra de tareas
+; Usaremos el estilo WS_EX_TOPMOST y WinSet para ocultar la barra de tareas
+DetectHiddenWindows, On
+TaskbarClass := "Shell_TrayWnd"
+TaskbarVisible := !TaskbarVisible  ; alterna estado
+
+if (TaskbarVisible)
+{
+    WinShow, ahk_class %TaskbarClass%
+}
+else
+{
+    WinHide, ahk_class %TaskbarClass%
+}
+return
+
+
